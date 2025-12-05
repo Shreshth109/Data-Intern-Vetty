@@ -28,4 +28,42 @@ FROM transactions
 WHERE refund_time IS NOT NULL
 GROUP BY store_id;
 
+-- Q4: Find each store's first order gross transaction value
+-- Window function ROW_NUMBER() orders each store’s purchases by time. 
+-- The first ranked row (rn=1) represents the store’s earliest purchase, 
+-- so we return its value.
+WITH ranked AS (
+    SELECT *,
+           ROW_NUMBER() OVER (PARTITION BY store_id ORDER BY purchase_time) AS rn
+    FROM transactions
+)
+SELECT store_id, gross_transaction_value
+FROM ranked
+WHERE rn = 1;
+
+
+-- Q5: Most ordered item on buyers' first purchase
+-- Determine each buyer’s earliest purchase, join it with 
+-- the items table, group by item name, and count occurrences. 
+-- The one with the highest count is the most popular first-purchase item.
+WITH buyer_first AS (
+    SELECT buyer_id, MIN(purchase_time) AS first_purchase
+    FROM transactions
+    GROUP BY buyer_id
+),
+join_items AS (
+    SELECT t.*, i.item_name
+    FROM transactions t
+    JOIN buyer_first bf 
+        ON t.buyer_id = bf.buyer_id AND t.purchase_time = bf.first_purchase
+    JOIN items i 
+        ON t.item_id = i.item_id AND t.store_id = i.store_id
+)
+SELECT item_name, COUNT(*) AS order_count
+FROM join_items
+GROUP BY item_name
+ORDER BY order_count DESC
+LIMIT 1;
+
+
 
