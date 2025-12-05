@@ -100,5 +100,27 @@ FROM ranked_purchases
 WHERE purchase_rank = 2;
 
 
+-- Q8: Get the second transaction time per buyer (no MIN/MAX, assume many transactions)
+-- Use a window ROW_NUMBER() ordered by purchase time for each buyer. 
+-- The row where rank equals 2 shows the second chronological transaction without using MIN or MAX.
+WITH ordered_tx AS (
+    SELECT
+        buyer_id,
+        purchase_time,
+        ROW_NUMBER() OVER (
+            PARTITION BY buyer_id
+            ORDER BY purchase_time
+        ) AS rn
+    FROM transactions
+    WHERE refund_time IS NULL      -- treat only successful purchases as transactions
+)
+SELECT
+    buyer_id,
+    purchase_time AS second_transaction_time
+FROM ordered_tx
+WHERE rn = 2;
+
+
+
 
 
