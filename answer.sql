@@ -15,6 +15,17 @@ ORDER BY 1;
 -- Using HAVING COUNT(*) >= 5 checks which stores reached at least 5 orders.
 SELECT store_id, COUNT(*) AS total_orders
 FROM transactions
-WHERE DATE_TRUNC('month', purchase_time) = '2020-10-01'
+WHERE MONTH(purchase_time) = '2020-10-01'
 GROUP BY store_id
 HAVING COUNT(*) >= 5;
+
+
+-- Q3: Shortest refund interval per store (only refunded orders)
+-- We calculate the difference between 
+-- refund_time and purchase_time for refunded orders and convert it to minutes. Using MIN() gives each store’s smallest refund processing time.
+SELECT store_id, MIN(TIMESTAMPDIFF(MINUTE, purchase_time, refund_time)) AS min_refund_minutes
+FROM transactions
+WHERE refund_time IS NOT NULL
+GROUP BY store_id;
+
+
