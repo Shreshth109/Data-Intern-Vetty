@@ -65,5 +65,40 @@ GROUP BY item_name
 ORDER BY order_count DESC
 LIMIT 1;
 
+-- Q6: Add a flag indicating if refund can be processed (within 72 hours)
+-- We check if the difference between purchase and refund times is ≤ 72 hours. 
+-- If true, assign a flag 1, else 0. Null refunds are automatically flagged as 0.
+SELECT
+    buyer_id,
+    purchase_time,
+    refund_time,
+    store_id,
+    item_id,
+    gross_transaction_value,
+    CASE
+        WHEN refund_time IS NOT NULL AND TIMESTAMPDIFF(HOUR, purchase_time, refund_time) <= 72 THEN 1 -- refund can be processed
+        ELSE 0 -- refund cannot be processed (or no refund)
+    END AS refund_processable_flag
+FROM
+    transactions;
+
+-- Q7: Rank purchases per buyer and select only the second non-refunded purchase
+-- Ignore refunded orders, then assign a row number per buyer based on purchase 
+-- time. The record with rank 2 represents the second successful purchase and is filtered.
+WITH ranked_purchases AS (
+    SELECT
+        t.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY buyer_id
+            ORDER BY purchase_time
+        ) AS purchase_rank
+    FROM transactions t
+    WHERE refund_time IS NULL      -- ignore refunded purchases
+)
+SELECT *
+FROM ranked_purchases
+WHERE purchase_rank = 2;
+
+
 
 
